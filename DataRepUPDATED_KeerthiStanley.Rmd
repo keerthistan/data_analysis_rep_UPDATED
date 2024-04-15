@@ -93,7 +93,7 @@ Articulation- Phrase 1
 ```{r}
 library(tidyverse)
 
-f1 <- "/Users/KeerthiStanley/Desktop/ANT388C-REPOS/data_analysis_rep_UPDATED/data/ar1.csv"
+f1 <- "https://raw.githubusercontent.com/keerthistan/data_analysis_rep_UPDATED/main/data/ar1.csv"
 
 # there is no labeling of the columns, so col_names = FALSE
 d1 <- read_csv(f1, col_names = FALSE)
@@ -108,7 +108,7 @@ Articulation- Phrase 2
 ```{r}
 library(tidyverse)
 
-f2 <- "/Users/KeerthiStanley/Documents/MATLAB/ar2.csv"
+f2 <- "https://raw.githubusercontent.com/keerthistan/data_analysis_rep_UPDATED/main/data/ar2.csv"
 
 # there is no labeling of the columns, so col_names = FALSE
 d2 <- read_csv(f2, col_names = FALSE)
@@ -123,7 +123,7 @@ Articulation- Phrase 3
 ```{r}
 library(tidyverse)
 
-f3 <- "/Users/KeerthiStanley/Documents/MATLAB/ar3.csv"
+f3 <- "https://raw.githubusercontent.com/keerthistan/data_analysis_rep_UPDATED/main/data/ar3.csv"
 
 # there is no labeling of the columns, so col_names = FALSE
 d3 <- read_csv(f3, col_names = FALSE)
@@ -138,7 +138,7 @@ Articulation- Phrase 4
 ```{r}
 library(tidyverse)
 
-f4 <- "/Users/KeerthiStanley/Documents/MATLAB/ar4.csv"
+f4 <- "https://raw.githubusercontent.com/keerthistan/data_analysis_rep_UPDATED/main/data/ar4.csv"
 
 # there is no labeling of the columns, so col_names = FALSE
 d4 <- read_csv(f4, col_names = FALSE)
@@ -152,7 +152,7 @@ Articulation- Phrase 5
 ```{r}
 library(tidyverse)
 
-f5 <- "/Users/KeerthiStanley/Documents/MATLAB/ar5.csv"
+f5 <- "https://raw.githubusercontent.com/keerthistan/data_analysis_rep_UPDATED/main/data/ar5.csv"
 
 # there is no labeling of the columns, so col_names = FALSE
 d5 <- read_csv(f5, col_names = FALSE)
@@ -168,9 +168,13 @@ show the first few lines of data:
 head() function documentation-
 https://www.digitalocean.com/community/tutorials/head-and-tail-function-r
 
-this shows us the first 10 rows (A.K.A sensors)
+this shows us the first 10 rows (A.K.A sensors) and 5 columns (time points when MEG measurements were taken)
 ```{r}
-(head(d1, n=10))
+# [row, columns]
+# start index : stop index --> R has base index of 1
+d1_head <- d1[1:10, 1:5]
+
+print(d1_head)
 ```
 
 
@@ -496,13 +500,16 @@ How to access the results?
 
 call which band you want to get the values for:
 
-    EX: art5_bandpowers[["Alpha"]]
-    (this will print out the alpha band values for each of the 204 sensors)
   
 example with code input and output:    
-```{r}
-print(art1_bandpowers[["Theta"]])
-```
+
+> print(art1_bandpowers[["Theta"]])
+
+(this will print out the theta band values for each of the 204 sensors, in the articulation phrase 1 data)
+
+however, this looked really cluttered when rendered, so I'm not showing the output here
+
+
 
 
 
@@ -548,16 +555,17 @@ for (i in 1:length(all_art_bandpowers)) {
 
 if you want to view each phrase's data in more detail you can use the View() function to do so
 
-EX: viewing the first phrase's (art1) combined bandpower for each band and sensor
-```{r}
-(View(art_concatenated[[1]]))
-```
+EX: viewing the first phrase's (art1) combined bandpower for each band and sensor:
+
+> (View(art_concatenated[[1]]))
 
 
-or view them all by just calling on the art_concatenated list
-```{r}
-art_concatenated
-```
+...or view them all by just calling on the art_concatenated list:
+
+> art_concatenated
+
+
+however, once again, this looked very cluttered when rendered, so I'm not actually including this in my code
 
 
 
