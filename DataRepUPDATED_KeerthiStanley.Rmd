@@ -619,7 +619,47 @@ each band was standardized separately to account for the fact that different ban
 operate on different values/scales
 
 
-step  2- perform pca and print the output summary
+tutorial on some of this code: https://www.datacamp.com/tutorial/pca-analysis-r
+
+  - I need {corrr} and {ggcorrplot}
+  
+  
+step 2- correlation matrix:
+```{r}
+library(corrr)
+library(ggcorrplot)
+
+# FUNCTION CREATION
+# create function to compute and plot correlation matrix for each standardized dataset
+plot_corr_matrix <- function(data, title) {
+  # compute the correlation matrix
+  corr_matrix <- cor(data)
+
+  # plotting correlation matrix using {ggcorrplot}
+  ggcorrplot(corr_matrix, title = title, lab = TRUE)
+}
+
+
+# APPLYING FUNCTION TO NORMALIZED CONCATENATED DATA LIST
+# once again using lapply() for this
+# seq_along(): assigns sequence of numbers to each element of the list
+(lapply(seq_along(art_concatenated_standardized), function(i) {
+  plot_corr_matrix(art_concatenated_standardized[[i]], paste("Correlation Matrix for Articulation Phrase", i))
+}))
+
+```
+
+
+interpreting the correlation matrix:
+  - the range of this is -1 to 1; the higher numbers (more red squares) indicate a HIGH level of correlation between 2 variables
+      - for example, the high correlation between Gamma and Lower High Gamma (LHG) noticed across the all 5 phrases
+  - the more white range (around 0), indicates little to no correlation and the blue (closer to -1) indicates anticorrelation
+      - for example, in phrase 5, there seems to be very little correlation (0.14) between theta and LHG, especially when compared with some of the other phrases
+  - high correlation can indicate redundancy in the data, and allows us to see interactions in our dataset prior to conducting PCA
+
+
+
+step  3- perform pca and print the output summary
 ```{r}
 # need the {stats} package for this
 library(stats)
@@ -648,8 +688,53 @@ manually calculated: std^2 / sum(std^2)
 we use this to determine which PC's fall under the specified variance threshold (in this case, 90%)
 
 
-NOT COMPLETE!!!!!!!!!!!!
+looking at the Cumulative proportion I can find the number of PC's needed for each phrase to just pass the 90% variance threshold:
 
+ART1: PC1, PC2, and PC3 (3 PC's)
+
+ART2: PC1, PC2, PC3, and PC4 (4 PC's)
+
+ART3: PC1, PC2, and PC3 (3 PC's)
+
+ART4: PC1, PC2, and PC3 (3 PC's)
+
+ART5: PC1, PC2, PC3, and PC4 (4 PC's)
+
+
+```{r}
+threshold <- 0.9  # variance threshold at 90%
+
+# make function to extract PC's that meet the variance threshold, with the results
+extract_principal_components <- function(pca_result, threshold) {
+  # manually computing the cumulative variance
+  var_explained <- pca_result$sdev^2 / sum(pca_result$sdev^2)
+  cumulative_variance <- cumsum(var_explained)
+  
+  # number of components correspond to when the cumulation variance is greater than or equal to 90% (threshold)
+  num_components <- which(cumulative_variance >= threshold)[1]
+  
+  # return the principal components up to that number
+  return(pca_result$x[, 1:num_components])
+}
+
+# apply function
+# creates a list with 5 smaller structures for each articulation phrase
+  # 204 sensors/rows, with columns corresponding to the number of accepted PC's
+pcs_kept <- lapply(pca_results, extract_principal_components, threshold)
+```
+
+if you want to see the fully displayed pc's then you can program:
+> pcs_kept
+
+however, I will not be printing these, as they are very long when rendered
+
+
+
+In the paper, Dash created two different versions of the concatenated data. One was from the original, pre-PCA data and the other was post-PCA, only using the PC's needed to meet the 90% variance threshold. He then compared their accuracy across different machine learning algorithms, While I am not doing this specific visualization from the paper, I wanted to show how PCA uses descriptive stats such as standard deviation and proportion of variance, to select ideal principal components, that will reduce dimensionality while maintaining the important trends/relationships of the data.
+
+
+copying path from the images folder of the repository:
+![](images/FIG3B-ComparisonPlot_OriginalData.png)
 
 
 
