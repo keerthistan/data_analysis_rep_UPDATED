@@ -898,6 +898,80 @@ standardize_data &lt;- function(data) {
 }</code></pre>
 <p>since art_concatenated is classified as a list, I can now use the
 lapply() function to apply the function across the list</p>
+<p>standardize the concatenated data</p>
+<pre class="r"><code># x is each element of the list
+# apply the standardize_data function to each column (band) in x
+art_concatenated_standardized &lt;- lapply(art_concatenated, function(x) apply(x, 2, standardize_data))</code></pre>
+<p>each band was standardized separately to account for the fact that
+different bands (theta, delta, alpha, etc…) operate on different
+values/scales</p>
+<p>step 2- perform pca and print the output summary</p>
+<pre class="r"><code># need the {stats} package for this
+library(stats)
+# apply pca with prcomp() function
+# no need to center/scale be we already did by standardizing
+pca_results &lt;- lapply(art_concatenated_standardized, function(x) prcomp(x, center = FALSE, scale. = FALSE))  
+
+(summary(pca_results))</code></pre>
+<pre><code>##      Length Class  Mode
+## [1,] 5      prcomp list
+## [2,] 5      prcomp list
+## [3,] 5      prcomp list
+## [4,] 5      prcomp list
+## [5,] 5      prcomp list</code></pre>
+<p>we see each individual articulation phrase is it’s own list, so I
+need to use lapply() once again to print out a thorough PCA summary for
+each phrase</p>
+<pre class="r"><code>(lapply(pca_results, summary))</code></pre>
+<pre><code>## [[1]]
+## Importance of components:
+##                           PC1    PC2     PC3     PC4     PC5    PC6
+## Standard deviation     2.0073 0.9474 0.73257 0.58261 0.39695 0.1989
+## Proportion of Variance 0.6715 0.1496 0.08944 0.05657 0.02626 0.0066
+## Cumulative Proportion  0.6715 0.8211 0.91057 0.96714 0.99340 1.0000
+## 
+## [[2]]
+## Importance of components:
+##                           PC1    PC2    PC3     PC4     PC5     PC6
+## Standard deviation     1.8819 1.0333 0.7897 0.63132 0.55129 0.25449
+## Proportion of Variance 0.5902 0.1779 0.1040 0.06643 0.05065 0.01079
+## Cumulative Proportion  0.5902 0.7682 0.8721 0.93855 0.98921 1.00000
+## 
+## [[3]]
+## Importance of components:
+##                          PC1    PC2     PC3     PC4     PC5     PC6
+## Standard deviation     1.883 1.2741 0.55993 0.52696 0.43029 0.23303
+## Proportion of Variance 0.591 0.2706 0.05225 0.04628 0.03086 0.00905
+## Cumulative Proportion  0.591 0.8616 0.91381 0.96009 0.99095 1.00000
+## 
+## [[4]]
+## Importance of components:
+##                           PC1    PC2     PC3     PC4     PC5     PC6
+## Standard deviation     1.9812 1.0687 0.68611 0.50443 0.41908 0.17865
+## Proportion of Variance 0.6542 0.1903 0.07846 0.04241 0.02927 0.00532
+## Cumulative Proportion  0.6542 0.8445 0.92300 0.96541 0.99468 1.00000
+## 
+## [[5]]
+## Importance of components:
+##                           PC1    PC2     PC3     PC4     PC5     PC6
+## Standard deviation     1.8365 1.2324 0.69859 0.60926 0.47894 0.14058
+## Proportion of Variance 0.5621 0.2531 0.08134 0.06187 0.03823 0.00329
+## Cumulative Proportion  0.5621 0.8153 0.89661 0.95848 0.99671 1.00000</code></pre>
+<p>The PCA tells us 3 things: 1. Standard Deviation- how spread is the
+data within each principal component (PC)?</p>
+<ol start="2" style="list-style-type: decimal">
+<li>Proportion of Variance- what percentage of variance does each band
+account for individually? for instance, we see that the PC1 of art1
+composes 67.15% of the variance</li>
+</ol>
+<p>manually calculated: std^2 / sum(std^2)</p>
+<ol start="3" style="list-style-type: decimal">
+<li>Cumulative Proportion- adds up in the proportions of variance to
+obtain a total variance threshold at each stage</li>
+</ol>
+<p>we use this to determine which PC’s fall under the specified variance
+threshold (in this case, 90%)</p>
+<p>NOT COMPLETE!!!!!!!!!!!!</p>
 
 
 

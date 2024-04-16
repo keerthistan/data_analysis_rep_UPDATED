@@ -608,6 +608,58 @@ standardize_data <- function(data) {
 
 since art_concatenated is classified as a list, I can now use the lapply() function to apply the function across the list
 
+standardize the concatenated data
+```{r}
+# x is each element of the list
+# apply the standardize_data function to each column (band) in x
+art_concatenated_standardized <- lapply(art_concatenated, function(x) apply(x, 2, standardize_data))
+```
+
+each band was standardized separately to account for the fact that different bands (theta, delta, alpha, etc...)
+operate on different values/scales
+
+
+step  2- perform pca and print the output summary
+```{r}
+# need the {stats} package for this
+library(stats)
+# apply pca with prcomp() function
+# no need to center/scale be we already did by standardizing
+pca_results <- lapply(art_concatenated_standardized, function(x) prcomp(x, center = FALSE, scale. = FALSE))  
+
+(summary(pca_results))
+```
+we see each individual articulation phrase is it's own list, so I need to use lapply() once again to print out a thorough PCA summary for each phrase
+```{r}
+(lapply(pca_results, summary))
+```
+
+The PCA tells us 3 things:
+  1. Standard Deviation- how spread is the data within each principal component (PC)?
+
+
+  2. Proportion of Variance- what percentage of variance does each band account for individually?
+for instance, we see that the PC1 of art1 composes 67.15% of the variance
+
+manually calculated: std^2 / sum(std^2)
+
+  3. Cumulative Proportion- adds up in the proportions of variance to obtain a total variance threshold at each stage
+  
+we use this to determine which PC's fall under the specified variance threshold (in this case, 90%)
+
+
+NOT COMPLETE!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+
+
+
 
 
 
