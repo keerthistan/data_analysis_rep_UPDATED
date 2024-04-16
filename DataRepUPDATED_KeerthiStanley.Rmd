@@ -42,7 +42,6 @@ statistical analysis/machine learning:
 data visualization:
 7. computing and visualizing accuracy of KNN model's beta band predictions--> DATA VISUALIZATION
 
-** extra: comparing accuracy of KNN's beta band predictions BEFORE and AFTER conducting/applying PCA
 
 last, but not least...
 DISCUSSION/REFLECTIONS
@@ -739,8 +738,167 @@ copying path from the images folder of the repository:
 
 
 
+6. Applying the KNN Machine Learning Algorithm for Regression Analysis- INFERENTIAL STATISTICS
+
+(while these is not quite the same as the inferential statistical techniques discussed, Dr. DiFiore mentioned that designing/using a KNN model can count towards this requirement because I am using samples of the data to make inferences/predictions)
 
 
+The paper uses multiple different machine learning algorithms; for the visualization, I will just be using one: K-Nearest Neighbors (KNN)
+
+the paper says that it "was designed with a K value of 5 and Euclidean distance metric"
+  - Euclidean distance metric is default with the package I'll be using
+  - but I will remember to specify that K=5!
+
+KNN is relatively simple machine learning algorithm, which perhaps explains why KNN did not perform with super high accuracy in both ALS and Healthy Articulation experiments.
+
+
+Some facts about KNN:
+
+- in this case, to memorize how the MEG data corresponds to each of the 5 phrases and sort them out correctly by phrase--> Classification (seeks to classify the MEG features corresponsing to different phrases)
+
+- it essentially memorizes the dataset
+  - then to make a prediction, it looks for the closest observations in the training set, based on its distance metric
+      --> the K-value is how many 'neighbors' it bases it's classification off of
+
+
+
+* NOTE- the paper first used the original (pre-PCA) concatenated data to input into the ML models and determine accuracy, so that is what I will be doing here as well
+
+    - so the data being plugged in should be art_concatenated
+
+
+using methodology for KNN (with some sample code):
+https://www.datacamp.com/tutorial/k-nearest-neighbors-knn-classification-with-r-tutorial
+
+
+
+part 1- converting concatenated data into a dataframe that can be processed by KNN    
+```{r}
+library(tidyverse)
+
+# convert each matrix (for each phrase) to data frames and add a phrase label
+# lapply, because art_concatenated is a list
+art_data_frames <- lapply(seq_along(art_concatenated), function(i) {
+  data_frame <- as.data.frame(art_concatenated[[i]])
+  # labeling each phrase with it's numeric label
+  data_frame$Phrase <- paste("Phrase", i)
+  return(data_frame)
+})
+
+# combine all 5 data frames from each phrase into one dataframe, with phrase classification listed in a separate column
+art_full_data <- bind_rows(art_data_frames)
+```
+
+
+shuffle the data:
+```{r}
+set.seed(123)  # will only get the SAME random drawing each time, so others can reproduce these same splits/results
+
+# sample() function shuffles rows of a dataset, in this case the rows are the sensor numbers, as well as the phrase classifications
+# columns stay the same, split into different bands
+shuffle_art_full_data <- art_full_data[sample(nrow(art_full_data)), ]
+
+# showing a few lines so you can see how the data has been shuffled
+(head(shuffle_art_full_data))
+```
+
+
+cross validation- splitting into training and test sets
+  - this code is inspired by the KNN datacamp article documentation linked above
+```{r}
+library(caTools) # will need this package
+
+# using sample.split() to split the data, into 80% and 20% sets (this ratio is arbitrary, just chose this split because it's somewhat standard/common)
+split <- sample.split(shuffle_art_full_data$Phrase, SplitRatio = 0.80)
+
+# create training and testing datasets (with 80 % going into the training set, and the remaining 20% going into the test set)
+train <- subset(art_full_data, split == TRUE)
+test <- subset(art_full_data, split == FALSE)
+```
+
+
+"Phrase"--> the specific articulation phrase out of our 5 different phrases, is considered the target VARIABLE or LABEL
+
+the FEATURES refer to all the other columns, or bands (Theta, Alpha, Beta, etc...)
+
+
+
+feature scaling- necessary because KNN is calculating the distance between various data points
+should scale all the features to have mean = 0 and std = 1
+should NOT scale the target variable, so the column with Phrase should be excluding
+
+using the scale() function from the KNN documentation I listed earlier
+```{r}
+# using scale() to scale both the training and testing sets
+# excludes the final column, Phrase
+train_scaled = scale(train[-ncol(train)])
+test_scaled = scale(test[-ncol(test)])
+
+
+# checking the scaled data, we can see that it properly excluded the Phrase column
+head(train_scaled)
+
+head(test_scaled)
+```
+
+training the knn model
+using the knn() function from the {class} package
+
+using K value of 5, as the paper lists
+```{r}
+library(class)
+test_pred <- knn(
+                 train = train_scaled, 
+                 test = test_scaled,
+                 cl = train$Phrase, # the knn should classify the data according to which phrase it belongs to
+                 k=5 # according to the paper
+                 )
+```
+
+
+to evaluate the model, I need to create a confusion matrix!!
+once again using the data camp documention from Data Camp to construct this code
+ 
+```{r}
+# to gauge how accurate the model is, I need to compare with the actual values from the test/validation set
+# drawing out Phrase from the test set, as it is our label/target
+actual <- test$Phrase
+
+# create and display the Confusion Matrix (cm)
+(cm <- table(actual,test_pred))
+```
+determine accuracy of knn model
+    - to calculate accuracy: sum the diagonal values of the confusion matrix (when the test prediction)
+```{r}
+accuracy <- sum(diag(cm))/length(actual)
+sprintf("Accuracy: %.2f%%", accuracy*100)
+```
+
+
+DATA VISUALIZATION: plotting the accuracy of the KNN model for the concatenated data
+
+```{r}
+library(ggplot2)
+
+# Assuming 'accuracy' holds the accuracy rate computed previously
+# Create a data frame for plotting
+accuracy_data <- data.frame(
+  Category = "All",  # Since you want to label this as "All"
+  Accuracy = accuracy * 100  # Convert to percentage
+)
+
+# Plotting the data
+ggplot(accuracy_data, aes(x = Category, y = Accuracy, fill = Category)) +
+  geom_bar(stat = "identity", color = "black") +  # 'identity' to use the heights of the data
+  labs(title = "KNN Classification Accuracy", 
+       x = "Data", 
+       y = "Accuracy (%)") +
+  ylim(0, 100) +  # Set limits for the y-axis
+  theme_minimal()  # Use a minimal theme
+```
+
+
+NOT COMPLETE!!!!
 
 
 
