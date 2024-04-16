@@ -878,25 +878,31 @@ sprintf("Accuracy: %.2f%%", accuracy*100)
 DATA VISUALIZATION: plotting the accuracy of the KNN model for the concatenated data
 
 ```{r}
+# using ggplot
 library(ggplot2)
 
-# Assuming 'accuracy' holds the accuracy rate computed previously
-# Create a data frame for plotting
+# converting to data frame for plotting
 accuracy_data <- data.frame(
-  Category = "All",  # Since you want to label this as "All"
-  Accuracy = accuracy * 100  # Convert to percentage
+  Category = "All",  # all of the data, not individual bands
+  Accuracy = accuracy * 100  # convert to percentage
 )
 
-# Plotting the data
-ggplot(accuracy_data, aes(x = Category, y = Accuracy, fill = Category)) +
-  geom_bar(stat = "identity", color = "black") +  # 'identity' to use the heights of the data
-  labs(title = "KNN Classification Accuracy", 
-       x = "Data", 
+# PLOTTING
+ggplot(accuracy_data, aes(x = Category, y = Accuracy)) +
+  geom_bar(stat = "identity", fill = "orange") +  # 'identity' to use the heights of the data, filling it orange to match the paper's color for KNN
+  labs(title = "KNN Classification Accuracy for ALS Articulation Decoding", 
+       x = "Spectral Features", 
        y = "Accuracy (%)") +
-  ylim(0, 100) +  # Set limits for the y-axis
-  theme_minimal()  # Use a minimal theme
+  coord_cartesian(ylim = c(0, 100)) +  # setting limits for the y-axis to match the fact that it's a percentage
+  scale_y_continuous(breaks = seq(0, 100, by = 20)) +  # setting the y-axis to match the increments of the paper
+  theme_minimal()  
 ```
+Let's compare to the actual value for KNN accuracy shown in the paper for ALS articulation! 
 
+As we can see in the plot below, under "All" if we look at the accuracy of the KNN model (in orange), it is around 21-22%, which is almost exactly the value that I have obtained here!
+
+
+![](images/FIG2C-ComparisonPlot_OriginalData.png)
 
 NOT COMPLETE!!!!
 
