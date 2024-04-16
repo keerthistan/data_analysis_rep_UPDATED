@@ -1,4 +1,5 @@
-Data Replication
+ANT 388C
+Data Analysis Replication Project
 Keerthi Stanley
 
 
@@ -40,7 +41,7 @@ statistical analysis/machine learning:
 6. apply KNN machine learning algorithm --> INFERENTIAL STATS 
 
 data visualization:
-7. computing and visualizing accuracy of KNN model's beta band predictions--> DATA VISUALIZATION
+7. computing and visualizing accuracy of the KNN model's predictions--> DATA VISUALIZATION
 
 
 last, but not least...
@@ -533,6 +534,11 @@ all_art_bandpowers <- list(art1_bandpowers, art2_bandpowers, art3_bandpowers, ar
 # empty list that will come to store 
 art_concatenated <- list()
 
+
+# empty list specifically for LHG band data
+# ignore for now but I will be using this later!!!
+art_LHG <- list()
+
 # using cbind() in the for loop to concatenate data from each band
 for (i in 1:length(all_art_bandpowers)) {
   concatenated_data <- cbind(all_art_bandpowers[[i]][["Theta"]],
@@ -547,7 +553,13 @@ for (i in 1:length(all_art_bandpowers)) {
   
   # storing all the concatenated data in the list created earlier
   art_concatenated[[i]] <- concatenated_data
+  
+  # creating a data frame for the LHG values ACROSS all 5 phrases, and labeling which phrase it belongs to
+  # again, this doesn't make sense now, but will make sense later
+  art_LHG[[i]] <- data.frame(LHG = all_art_bandpowers[[i]][["Lower_HighGamma"]])
+  art_LHG[[i]]$Phrase <- paste("Phrase", i)  # Adding a phrase label for clarity and further analyses
 }
+  
 
 ```
 
@@ -812,8 +824,8 @@ library(caTools) # will need this package
 split <- sample.split(shuffle_art_full_data$Phrase, SplitRatio = 0.80)
 
 # create training and testing datasets (with 80 % going into the training set, and the remaining 20% going into the test set)
-train <- subset(art_full_data, split == TRUE)
-test <- subset(art_full_data, split == FALSE)
+train <- subset(shuffle_art_full_data, split == TRUE)
+test <- subset(shuffle_art_full_data, split == FALSE)
 ```
 
 
@@ -899,18 +911,136 @@ ggplot(accuracy_data, aes(x = Category, y = Accuracy)) +
 ```
 Let's compare to the actual value for KNN accuracy shown in the paper for ALS articulation! 
 
-As we can see in the plot below, under "All" if we look at the accuracy of the KNN model (in orange), it is around 21-22%, which is almost exactly the value that I have obtained here!
+As we can see in the plot below, under "All" if we look at the accuracy of the KNN model (in orange), it seems to be around 22-23%, which is very close to (and within the margin of error of) the accuracy I obtained: 26.34% !
 
 
 ![](images/FIG2C-ComparisonPlot_OriginalData.png)
 
-NOT COMPLETE!!!!
+*** extra:
+
+the paper also uses individual spectral bands as input for the same ML models, and gauges their accuracy. thus I wanted to test this out and try to see if using the Lower High Gamma (LHG) power as input would work in my KNN model code
+
+wayyyy back in step 4, when I was first concatenating the data, I add lines to create a new data structure called art_LHG which stored just the LHG values across the 5 sentences
+
+now I'm binding the rows together, like I did with the concatenated data
+```{r}
+# combine all 5 data frames from each phrase into one dataframe, with phrase classification listed in a separate column
+art_LHG <- bind_rows(art_LHG)
+
+# so you can see an example of what this looks like
+head(art_LHG)
+```
+
+now I can continue the exact same process that I did for KNN before, but plug in the LHG data for where the concatenated data had gone before
+
+shuffling the data
+```{r}
+set.seed(123)  # will only get the SAME random drawing each time, so others can reproduce these same splits/results
+
+# sample() function shuffles rows of a dataset, in this case the rows are the sensor numbers, as well as the phrase classifications
+# columns stay the same, split into different bands
+shuffle_art_LHG <- art_LHG[sample(nrow(art_LHG)), ]
+
+# showing a few lines so you can see how the data has been shuffled
+(head(shuffle_art_LHG))
+```
+
+cross validation
+```{r}
+library(caTools) # will need this package
+
+# using sample.split() to split the data, into 80% and 20% sets (this ratio is arbitrary, just chose this split because it's somewhat standard/common)
+split <- sample.split(shuffle_art_LHG$Phrase, SplitRatio = 0.80)
+
+# create training and testing datasets (with 80 % going into the training set, and the remaining 20% going into the test set)
+train_LHG <- subset(shuffle_art_LHG, split == TRUE)
+test_LHG <- subset(shuffle_art_LHG, split == FALSE)
+```
+
+
+no need to apply feature scaling when there is only one feature/band here, since the distance between values will remain relatively the same either way
+
+so I just need to remove the phrase column, with scaling, to apply it to the KNN model for 'train' and 'test'
+```{r}
+train_LHG_new = train_LHG[-ncol(train_LHG)]
+test_LHG_new = test_LHG[-ncol(test_LHG)]
+
+# checking the scaled data
+head(train_LHG_new)
+
+head(test_LHG_new)
+```
+
+
+designing KNN model
+```{r}
+library(class)
+test_pred_LHG <- knn(
+                 train = train_LHG_new, 
+                 test = test_LHG_new,
+                 cl = train_LHG$Phrase, 
+                 k=5 # according to the paper
+                 )
+```
+
+
+confusion matrix:
+```{r}
+# to gauge how accurate the model is, I need to compare with the actual values from the test/validation set
+# drawing out Phrase from the test set, as it is our label/target
+actual_LHG <- test_LHG$Phrase
+
+# create and display the Confusion Matrix (cm)
+(cm_LHG <- table(actual_LHG,test_pred_LHG))
+```
+
+determine accuracy:
+```{r}
+accuracy_LHG <- sum(diag(cm_LHG))/length(actual_LHG)
+sprintf("Accuracy: %.2f%%", accuracy*100)
+```
+
+Plotting
+```{r}
+# using ggplot
+library(ggplot2)
+
+# converting to data frame for plotting
+accuracy_data_LHG <- data.frame(
+  Category = "Lower High Gamma (LHG)",  # all of the data, not individual bands
+  Accuracy = accuracy_LHG * 100  # convert to percentage
+)
+
+# PLOTTING
+ggplot(accuracy_data_LHG, aes(x = Category, y = Accuracy)) +
+  geom_bar(stat = "identity", fill = "orange") +  # 'identity' to use the heights of the data, filling it orange to match the paper's color for KNN
+  labs(title = "KNN Classification Accuracy for ALS Articulation Decoding", 
+       x = "Spectral Features", 
+       y = "Accuracy (%)") +
+  coord_cartesian(ylim = c(0, 100)) +  # setting limits for the y-axis to match the fact that it's a percentage
+  scale_y_continuous(breaks = seq(0, 100, by = 20)) +  # setting the y-axis to match the increments of the paper
+  theme_minimal()  
+```
+
+
+however, here for some reason the value is not matching with the value from the paper, which had a MUCH higher accuracy percentage at around 40% for the KNN model :(
 
 
 
 
 
 
+FINAL DISCUSSION/REFLECTION:
+
+Overall I successfully implemented the methodology of the paper, applying spectral analysis/digital signal processing techniques, PCA, and KNN classification models to replicate the process and results of my paper. However, while the KNN model worked well for the concatenated data and produced results very similar to that of the paper, my KNN accuracy of the LHG band input was significantly lower than the accuracy listed in the paper. There are two possible reasons: 1) because I only ran the 1st trial for each phrase, I did not have a large enough data size to replicate the paper (which used 84 different trials per phrase); 2) I used a different method for concatenated my LHG data and perhaps made a mistake in what data was input to the KNN model
+
+I found it challenging to identify descriptive and inferential statistics methods in the paper, as the machine learning premise was very different from the examples I've worked through in this class. The way I classified/adressed descriptive and inferential stats in the project is listed in the overview at the beginning, and I confirmed with Dr. DiFiore that it will be counted for the statistical element of the project. 
+
+Another challenge was replicating the specifications that the author used for various steps, such as why he chose 196 out of the total 204 (and how these sensor selections were made) as well as the exact percentage of a split between training and testing data in the cross validation step.
+
+Lastly, in the future I would also like to try to replicate the data from Figure 3 in the paper, which compares the accuracy of KNN before VS after PCA. My analyses were with the data prior to PCA, as this is what the author of the paper used 1st for his Figure 2 results.
+
+Overall this project taught me a lot about DSP and machine learning, and it was very insightful to apply course knowledge to my field of research! While my initial visualization matches with the paper's, I still have inaccuracies in my overall analysis, and hope to improve my understanding of how to implement stats into neuroimaging/machine learning research.
 
 
 
